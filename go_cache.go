@@ -24,12 +24,14 @@ func (c *GoCache) Get(key string, object interface{}) (Value, bool) {
 	return Value{data}, exists
 }
 
-func (c *GoCache) Put(key string, data interface{}, d time.Duration) {
+func (c *GoCache) Put(key string, data interface{}, d time.Duration) error {
 	c.gc.Set(key, data, d)
+	return nil
 }
 
-func (c *GoCache) Forever(key string, data interface{}) {
+func (c *GoCache) Forever(key string, data interface{}) error {
 	c.gc.Set(key, data, gc.NoExpiration)
+	return nil
 }
 
 func (c *GoCache) Remove(key string) bool {

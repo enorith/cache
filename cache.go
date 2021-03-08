@@ -28,8 +28,8 @@ var (
 type Repository interface {
 	Has(key string) bool
 	Get(key string, object interface{}) (Value, bool)
-	Put(key string, data interface{}, d time.Duration)
-	Forever(key string, data interface{})
+	Put(key string, data interface{}, d time.Duration) error
+	Forever(key string, data interface{}) error
 	Remove(key string) bool
 	Increment(key string) bool
 	Decrement(key string) bool
@@ -60,17 +60,17 @@ func (m *Manager) Get(key string, object interface{}) (Value, bool) {
 
 }
 
-func (m *Manager) Put(key string, data interface{}, d time.Duration) {
+func (m *Manager) Put(key string, data interface{}, d time.Duration) error {
 	if c, ok := data.(CacheAble); ok {
 		data := c.MarshalToCache()
-		m.driver.Put(key, data, d)
+		return m.driver.Put(key, data, d)
 	} else {
-		m.driver.Put(key, data, d)
+		return m.driver.Put(key, data, d)
 	}
 }
 
-func (m *Manager) Forever(key string, data interface{}) {
-	m.driver.Forever(key, data)
+func (m *Manager) Forever(key string, data interface{}) error {
+	return m.driver.Forever(key, data)
 }
 
 func (m *Manager) Remove(key string) bool {
