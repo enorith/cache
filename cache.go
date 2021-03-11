@@ -11,6 +11,7 @@ import (
 var (
 	DefaultExpiration = time.Minute * 20
 	CleanupInterval   = time.Minute * 10
+	KeyPrefix         = ""
 )
 
 type DriverRegister func() Repository
@@ -42,10 +43,11 @@ type Manager struct {
 }
 
 func (m *Manager) Has(key string) bool {
-	return m.driver.Has(key)
+	return m.driver.Has(RealKey(key))
 }
 
 func (m *Manager) Get(key string, object interface{}) (Value, bool) {
+	key = RealKey(key)
 	if c, is := object.(CacheAble); is {
 		var v Value
 		result := c.UnmarshalFromCache(func(value interface{}) bool {
@@ -61,6 +63,8 @@ func (m *Manager) Get(key string, object interface{}) (Value, bool) {
 }
 
 func (m *Manager) Put(key string, data interface{}, d time.Duration) error {
+	key = RealKey(key)
+
 	if c, ok := data.(CacheAble); ok {
 		data := c.MarshalToCache()
 		return m.driver.Put(key, data, d)
@@ -70,23 +74,23 @@ func (m *Manager) Put(key string, data interface{}, d time.Duration) error {
 }
 
 func (m *Manager) Forever(key string, data interface{}) error {
-	return m.driver.Forever(key, data)
+	return m.driver.Forever(RealKey(key), data)
 }
 
 func (m *Manager) Remove(key string) bool {
-	return m.driver.Remove(key)
+	return m.driver.Remove(RealKey(key))
 }
 
 func (m *Manager) Increment(key string) bool {
-	return m.driver.Increment(key)
+	return m.driver.Increment(RealKey(key))
 }
 
 func (m *Manager) Decrement(key string) bool {
-	return m.driver.Decrement(key)
+	return m.driver.Decrement(RealKey(key))
 }
 
 func (m *Manager) Add(key string, data interface{}, d time.Duration) bool {
-	return m.driver.Add(key, data, d)
+	return m.driver.Add(RealKey(key), data, d)
 }
 
 func (m *Manager) Use(driver string) error {
@@ -133,4 +137,8 @@ func NewManager(defaultDriver ...string) *Manager {
 	}
 
 	return m
+}
+
+func RealKey(k string) string {
+	return KeyPrefix + k
 }
