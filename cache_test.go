@@ -1,11 +1,12 @@
 package cache_test
 
 import (
+	"testing"
+	"time"
+
 	"github.com/enorith/cache"
 	cache2 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
-	"testing"
-	"time"
 )
 
 func TestRedisCache_Put(t *testing.T) {
@@ -39,7 +40,7 @@ func TestRedisCache_Increment(t *testing.T) {
 func getRc() *cache.RedisCache {
 	ring := redis.NewRing(&redis.RingOptions{
 		Addrs: map[string]string{
-			"server1": "127.0.0.1:16379",
+			"server1": "ubuntu:16379",
 		},
 	})
 
