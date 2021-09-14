@@ -2,7 +2,6 @@ package cache
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -14,7 +13,7 @@ var (
 	KeyPrefix         = ""
 )
 
-type DriverRegister func() Repository
+type DriverRegister func() (Repository, error)
 
 type CacheAble interface {
 	MarshalToCache() interface{}
@@ -94,15 +93,19 @@ func (m *Manager) Add(key string, data interface{}, d time.Duration) bool {
 }
 
 func (m *Manager) Use(driver string) error {
+	var e error
 	if register, ok := getDriverRegister(driver); ok {
 		if driver != m.driverName {
-			m.driver = register()
+			m.driver, e = register()
+			if e != nil {
+				return e
+			}
 			m.driverName = driver
 		}
 		return nil
 	}
 
-	return errors.New(fmt.Sprintf("cache: driver [%s] not registerd", driver))
+	return fmt.Errorf("cache: driver [%s] not registerd", driver)
 }
 
 func getDriverRegister(driver string) (DriverRegister, bool) {
