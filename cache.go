@@ -21,7 +21,7 @@ type CacheAble interface {
 }
 
 var (
-	DriverRegisters = make(map[string]DriverRegister)
+	driverRegisters = make(map[string]DriverRegister)
 	dm              = new(sync.RWMutex)
 )
 
@@ -94,7 +94,7 @@ func (m *Manager) Add(key string, data interface{}, d time.Duration) bool {
 
 func (m *Manager) Use(driver string) error {
 	var e error
-	if register, ok := getDriverRegister(driver); ok {
+	if register, ok := GetDriverRegister(driver); ok {
 		if driver != m.driverName {
 			m.driver, e = register()
 			if e != nil {
@@ -108,16 +108,16 @@ func (m *Manager) Use(driver string) error {
 	return fmt.Errorf("cache: driver [%s] not registerd", driver)
 }
 
-func getDriverRegister(driver string) (DriverRegister, bool) {
+func GetDriverRegister(driver string) (DriverRegister, bool) {
 	dm.RLock()
 	defer dm.RUnlock()
-	register, ok := DriverRegisters[driver]
+	register, ok := driverRegisters[driver]
 	return register, ok
 }
 
 func RegisterDriver(name string, register DriverRegister) {
 	dm.Lock()
-	DriverRegisters[name] = register
+	driverRegisters[name] = register
 	dm.Unlock()
 }
 
