@@ -37,8 +37,10 @@ type Repository interface {
 }
 
 type Manager struct {
-	driver     Repository
-	driverName string
+	driver       Repository
+	driverName   string
+	repositories map[string]Repository
+	mu           sync.RWMutex
 }
 
 func (m *Manager) Has(key string) bool {
@@ -93,19 +95,37 @@ func (m *Manager) Add(key string, data interface{}, d time.Duration) bool {
 }
 
 func (m *Manager) Use(driver string) error {
-	var e error
-	if register, ok := GetDriverRegister(driver); ok {
+	if repo, ok := m.GetRepository(driver); ok {
 		if driver != m.driverName {
-			m.driver, e = register()
-			if e != nil {
-				return e
-			}
+			m.driver = repo
 			m.driverName = driver
 		}
 		return nil
 	}
 
 	return fmt.Errorf("cache: driver [%s] not registerd", driver)
+}
+
+func (m *Manager) GetRepository(driver string) (Repository, bool) {
+	m.mu.RLock()
+	repository, ok := m.repositories[driver]
+	m.mu.RUnlock()
+
+	if !ok {
+		if register, dok := GetDriverRegister(driver); dok {
+			repo, e := register()
+			if e != nil {
+				return nil, false
+			}
+			m.mu.Lock()
+			m.repositories[driver] = repo
+			m.mu.Unlock()
+			repository = repo
+			ok = true
+		}
+	}
+
+	return repository, ok
 }
 
 func GetDriverRegister(driver string) (DriverRegister, bool) {
@@ -135,10 +155,12 @@ func (v *Value) Data() interface{} {
 
 func NewManager(defaultDriver ...string) *Manager {
 	m := new(Manager)
+	m.repositories = make(map[string]Repository)
+
+	m.mu = sync.RWMutex{}
 	if len(defaultDriver) > 0 {
 		m.Use(defaultDriver[0])
 	}
-
 	return m
 }
 

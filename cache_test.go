@@ -37,6 +37,15 @@ func TestRedisCache_Increment(t *testing.T) {
 	}
 }
 
+func TestManager(t *testing.T) {
+	cache.RegisterDriver("redis", func() (cache.Repository, error) {
+		return getRc(), nil
+	})
+	m := cache.NewManager("redis")
+
+	m.Put("cache_test:m", "test", time.Minute)
+}
+
 func getRc() *cache.RedisCache {
 	ring := redis.NewRing(&redis.RingOptions{
 		Addrs: map[string]string{
