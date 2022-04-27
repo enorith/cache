@@ -17,19 +17,20 @@ type RedisClient interface {
 }
 
 type RedisCache struct {
-	opt   *cache.Options
-	codec *cache.Cache
-	ctx   context.Context
+	opt    *cache.Options
+	codec  *cache.Cache
+	ctx    context.Context
+	prefix string
 }
 
 func (r *RedisCache) Has(key string) bool {
-	return r.codec.Exists(r.ctx, key)
+	return r.codec.Exists(r.ctx, r.resolveKey(key))
 }
 
 func (r *RedisCache) Get(key string, object interface{}) (Value, bool) {
 	if r.shouldGetNative(object) {
 		e := r.NativeCall(func(c RedisClient) error {
-			cmd := c.Get(r.ctx, key)
+			cmd := c.Get(r.ctx, r.resolveKey(key))
 			err := cmd.Err()
 			if err == nil {
 				return cmd.Scan(object)
@@ -38,7 +39,7 @@ func (r *RedisCache) Get(key string, object interface{}) (Value, bool) {
 		})
 		return Value{object}, e == nil
 	} else {
-		err := r.codec.Get(r.ctx, key, object)
+		err := r.codec.Get(r.ctx, r.resolveKey(key), object)
 		if err != nil {
 			return Value{}, false
 		}
@@ -49,10 +50,10 @@ func (r *RedisCache) Get(key string, object interface{}) (Value, bool) {
 
 func (r *RedisCache) Put(key string, data interface{}, d time.Duration) error {
 	if r.shouldNative(data) {
-		return r.nativePut(key, data, d)
+		return r.nativePut(r.resolveKey(key), data, d)
 	} else {
 		return r.codec.Set(&cache.Item{
-			Key:   key,
+			Key:   r.resolveKey(key),
 			Value: data,
 			TTL:   d,
 			Ctx:   r.ctx,
@@ -89,7 +90,7 @@ func (r *RedisCache) Forever(key string, data interface{}) error {
 }
 
 func (r *RedisCache) Remove(key string) bool {
-	err := r.codec.Delete(r.ctx, key)
+	err := r.codec.Delete(r.ctx, r.resolveKey(key))
 
 	return err == nil
 }
@@ -97,7 +98,7 @@ func (r *RedisCache) Remove(key string) bool {
 func (r *RedisCache) Increment(key string) bool {
 	if r.Has(key) {
 		err := r.NativeCall(func(c RedisClient) error {
-			return c.Incr(r.ctx, key).Err()
+			return c.Incr(r.ctx, r.resolveKey(key)).Err()
 		})
 		return err == nil
 	}
@@ -116,7 +117,7 @@ func (r *RedisCache) NativeCall(f func(c RedisClient) error) error {
 func (r *RedisCache) Decrement(key string) bool {
 	if r.Has(key) {
 		err := r.NativeCall(func(c RedisClient) error {
-			return c.Decr(r.ctx, key).Err()
+			return c.Decr(r.ctx, r.resolveKey(key)).Err()
 		})
 		return err == nil
 	}
@@ -135,8 +136,16 @@ func (r *RedisCache) Add(key string, data interface{}, d time.Duration) bool {
 	return false
 }
 
-func NewRedisCache(options *cache.Options) *RedisCache {
-	ctx := context.Background()
+func (r *RedisCache) resolveKey(key string) string {
+	return r.prefix + key
+}
 
-	return &RedisCache{codec: cache.New(options), opt: options, ctx: ctx}
+func NewRedisCache(options *cache.Options, prefix ...string) *RedisCache {
+	ctx := context.Background()
+	var p string
+	if len(prefix) > 0 {
+		p = prefix[0]
+	}
+
+	return &RedisCache{codec: cache.New(options), opt: options, ctx: ctx, prefix: p}
 }

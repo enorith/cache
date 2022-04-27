@@ -40,13 +40,14 @@ func TestRedisCache_Increment(t *testing.T) {
 func getRc() *cache.RedisCache {
 	ring := redis.NewRing(&redis.RingOptions{
 		Addrs: map[string]string{
-			"server1": "ubuntu:16379",
+			"server1": "localhost:6379",
 		},
+		DB: 1,
 	})
 
 	return cache.NewRedisCache(&cache2.Options{
 		Redis:        ring,
 		LocalCache:   cache2.NewTinyLFU(1000, time.Minute),
 		StatsEnabled: false,
-	})
+	}, "enorith:")
 }
