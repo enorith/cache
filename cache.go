@@ -10,7 +10,6 @@ import (
 var (
 	DefaultExpiration = time.Minute * 20
 	CleanupInterval   = time.Minute * 10
-	KeyPrefix         = ""
 )
 
 type DriverRegister func() (Repository, error)
@@ -165,5 +164,5 @@ func NewManager(defaultDriver ...string) *Manager {
 }
 
 func RealKey(k string) string {
-	return KeyPrefix + k
+	return k
 }
