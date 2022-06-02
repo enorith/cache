@@ -14,6 +14,7 @@ type RedisClient interface {
 	Incr(ctx context.Context, key string) *redis.IntCmd
 	Decr(ctx context.Context, key string) *redis.IntCmd
 	Get(ctx context.Context, key string) *redis.StringCmd
+	Do(ctx context.Context, args ...interface{}) *redis.Cmd
 }
 
 type RedisCache struct {
@@ -29,13 +30,21 @@ func (r *RedisCache) Has(key string) bool {
 
 func (r *RedisCache) Get(key string, object interface{}) (Value, bool) {
 	if r.shouldGetNative(object) {
-		e := r.NativeCall(func(c RedisClient) error {
-			cmd := c.Get(r.ctx, r.resolveKey(key))
-			err := cmd.Err()
-			if err == nil {
-				return cmd.Scan(object)
+		e := r.NativeCall(func(c RedisClient) (err error) {
+			if object == nil {
+				cmd := c.Do(r.ctx, "GET", r.resolveKey(key))
+
+				object, err = cmd.Result()
+				return
+			} else {
+				cmd := c.Get(r.ctx, r.resolveKey(key))
+				err = cmd.Err()
+				if err == nil {
+					return cmd.Scan(object)
+				}
+				return
 			}
-			return err
+
 		})
 		return Value{object}, e == nil
 	} else {
@@ -77,6 +86,10 @@ func (r *RedisCache) shouldNative(data interface{}) bool {
 }
 
 func (r *RedisCache) shouldGetNative(data interface{}) bool {
+	if data == nil {
+		return true
+	}
+
 	switch data.(type) {
 	case *int, *int8, *int16, *int32, *int64,
 		*uint, *uint8, *uint16, *uint32, *uint64:

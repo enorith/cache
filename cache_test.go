@@ -46,6 +46,26 @@ func TestManager(t *testing.T) {
 	m.Put("cache_test:m", "test", time.Minute)
 }
 
+func TestGetAny(t *testing.T) {
+	type foo struct {
+		Name string
+	}
+	rc := getRc()
+	e := rc.Put("cache:test_any", foo{
+		Name: "test",
+	}, time.Minute)
+	if e != nil {
+		t.Fatalf("error put redis cache %v", e)
+	}
+
+	v, ok := rc.Get("cache:test_any", nil)
+	if !ok {
+		t.Fatalf("error get redis cache any")
+	}
+
+	t.Logf("get %v", v.Data())
+}
+
 func getRc() *cache.RedisCache {
 	ring := redis.NewRing(&redis.RingOptions{
 		Addrs: map[string]string{

@@ -20,7 +20,9 @@ func (c *GoCache) Has(key string) bool {
 func (c *GoCache) Get(key string, object interface{}) (Value, bool) {
 	data, exists := c.gc.Get(c.resolveKey(key))
 
-	unmarshal(data, object)
+	if object != nil {
+		unmarshal(data, object)
+	}
 
 	return Value{data}, exists
 }
@@ -59,58 +61,45 @@ func (c *GoCache) Add(key string, data interface{}, d time.Duration) bool {
 }
 
 func unmarshal(from, to interface{}) bool {
-
 	decoded := false
 
 	switch t := to.(type) {
 	case *int:
 		*t = from.(int)
 		decoded = true
-		break
 	case *int8:
 		*t = from.(int8)
 		decoded = true
-		break
 	case *int16:
 		*t = from.(int16)
 		decoded = true
-		break
 	case *int64:
 		*t = from.(int64)
 		decoded = true
-		break
 	case *uint:
 		*t = from.(uint)
 		decoded = true
-		break
 	case *uint8:
 		*t = from.(uint8)
 		decoded = true
-		break
 	case *uint16:
 		*t = from.(uint16)
 		decoded = true
-		break
 	case *uint64:
 		*t = from.(uint64)
 		decoded = true
-		break
 	case *string:
 		*t = from.(string)
 		decoded = true
-		break
 	case *bool:
 		*t = from.(bool)
 		decoded = true
-		break
 	case *float32:
 		*t = from.(float32)
 		decoded = true
-		break
 	case *float64:
 		*t = from.(float64)
 		decoded = true
-		break
 	}
 	if !decoded {
 		v := reflect.ValueOf(to)
