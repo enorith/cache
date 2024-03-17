@@ -7,6 +7,7 @@ import (
 	"github.com/enorith/cache"
 	cache2 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
+	gc "github.com/patrickmn/go-cache"
 )
 
 func TestRedisCache_Put(t *testing.T) {
@@ -35,6 +36,23 @@ func TestRedisCache_Increment(t *testing.T) {
 	if v != 43 {
 		t.Fatalf("error Increment redis cache %d != 43", v)
 	}
+}
+
+func TestGoCache(t *testing.T) {
+	gc := getGc()
+	var str string
+	gc.Get("test", &str)
+	t.Log("test:", str)
+
+	type c struct {
+		a string
+	}
+
+	var str2 c
+	gc.Put("test 2", c{a: "test aaa"}, time.Minute)
+	gc.Get("test 2", &str2)
+
+	t.Log("test 2:", str2)
 }
 
 func TestManager(t *testing.T) {
@@ -79,4 +97,8 @@ func getRc() *cache.RedisCache {
 		LocalCache:   cache2.NewTinyLFU(1000, time.Minute),
 		StatsEnabled: false,
 	}, "enorith:")
+}
+
+func getGc() *cache.GoCache {
+	return cache.NewGoCache(gc.New(5*time.Minute, 5*time.Minute), "enorith:")
 }

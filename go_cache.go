@@ -20,7 +20,7 @@ func (c *GoCache) Has(key string) bool {
 func (c *GoCache) Get(key string, object interface{}) (Value, bool) {
 	data, exists := c.gc.Get(c.resolveKey(key))
 
-	if object != nil {
+	if object != nil && data != nil {
 		unmarshal(data, object)
 	}
 
@@ -61,60 +61,17 @@ func (c *GoCache) Add(key string, data interface{}, d time.Duration) bool {
 }
 
 func unmarshal(from, to interface{}) bool {
-	decoded := false
+	val := reflect.Indirect(reflect.ValueOf(from))
 
-	switch t := to.(type) {
-	case *int:
-		*t = from.(int)
-		decoded = true
-	case *int8:
-		*t = from.(int8)
-		decoded = true
-	case *int16:
-		*t = from.(int16)
-		decoded = true
-	case *int64:
-		*t = from.(int64)
-		decoded = true
-	case *uint:
-		*t = from.(uint)
-		decoded = true
-	case *uint8:
-		*t = from.(uint8)
-		decoded = true
-	case *uint16:
-		*t = from.(uint16)
-		decoded = true
-	case *uint64:
-		*t = from.(uint64)
-		decoded = true
-	case *string:
-		*t = from.(string)
-		decoded = true
-	case *bool:
-		*t = from.(bool)
-		decoded = true
-	case *float32:
-		*t = from.(float32)
-		decoded = true
-	case *float64:
-		*t = from.(float64)
-		decoded = true
+	if val.IsZero() {
+		return false
 	}
-	if !decoded {
-		v := reflect.ValueOf(to)
-		if v.Kind() == reflect.Ptr {
-			dv := reflect.ValueOf(from)
-			if dv.Kind() == reflect.Ptr {
-				v.Elem().Set(dv.Elem())
-				decoded = true
-			} else {
-				v.Elem().Set(dv)
-				decoded = true
-			}
-		}
-	}
-	return decoded
+
+	toVal := reflect.ValueOf(to)
+
+	reflect.Indirect(toVal).Set(val)
+
+	return true
 }
 
 func (c *GoCache) resolveKey(key string) string {
