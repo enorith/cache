@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/cache/v9"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisClient interface {

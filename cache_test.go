@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/enorith/cache"
-	cache2 "github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
+	cache2 "github.com/go-redis/cache/v9"
 	gc "github.com/patrickmn/go-cache"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestRedisCache_Put(t *testing.T) {
@@ -70,18 +70,20 @@ func TestGetAny(t *testing.T) {
 	}
 	rc := getRc()
 	e := rc.Put("cache:test_any", foo{
-		Name: "test",
+		Name: "test123",
 	}, time.Minute)
 	if e != nil {
 		t.Fatalf("error put redis cache %v", e)
 	}
 
-	v, ok := rc.Get("cache:test_any", nil)
+	var data foo
+
+	_, ok := rc.Get("cache:test_any", &data)
 	if !ok {
 		t.Fatalf("error get redis cache any")
 	}
 
-	t.Logf("get %v", v.Data())
+	t.Logf("get %v", data)
 }
 
 func getRc() *cache.RedisCache {
